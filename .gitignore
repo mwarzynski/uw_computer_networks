@@ -3,3 +3,4 @@ client.o
 server
 client
 err.o
+.idea
