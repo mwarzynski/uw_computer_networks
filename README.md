@@ -18,8 +18,8 @@ Serwer uruchamiamy poleceniem:
 
 Parametry:
 
-- port        – numer portu, na którym serwer ma odbierać dane od  klientów (liczba dziesiętna)
-- nazwapliku – nazwa pliku, którego treść należy doklejać
+- `port`        – numer portu, na którym serwer ma odbierać dane od  klientów (liczba dziesiętna)
+- `nazwa_pliku` – nazwa pliku, którego treść należy doklejać
 
 
 Klienta uruchamiamy poleceniem:
@@ -28,10 +28,10 @@ Klienta uruchamiamy poleceniem:
 
 Parametry:
 
-- timestamp – znacznik czasu wysyłany w pakiecie
-- c         – znak wysyłany w pakiecie
-- host      – nazwa serwera, z którym należy się połączyć
-- port      – opcjonalny numer portu serwera, z którym należy się połączyć (liczba dziesiętna); jeśli nie podano argumentu, jako numer portu powinna być przyjęta liczba 20160
+- `timestamp` – znacznik czasu wysyłany w pakiecie
+- `c`         – znak wysyłany w pakiecie
+- `host`      – nazwa serwera, z którym należy się połączyć
+- `port`      – opcjonalny numer portu serwera, z którym należy się połączyć (liczba dziesiętna); jeśli nie podano argumentu, jako numer portu powinna być przyjęta liczba 20160
 
 
 ## Protokół
