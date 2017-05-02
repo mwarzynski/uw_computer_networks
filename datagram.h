@@ -13,6 +13,12 @@ struct datagram {
     std::string text;
 };
 
+void print_datagram(datagram *d) {
+    if (!d)
+        return;
+    printf("%ld%c%s", d->timestamp, d->character, d->text.c_str());
+}
+
 void prepare_datagram(datagram *d, char character, std::string text) {
     d->character = character;
 

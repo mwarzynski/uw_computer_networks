@@ -57,7 +57,7 @@ public:
             return;
         }
 
-        printf("%ld%c%s", d.timestamp, d.character, d.text.c_str());
+        print_datagram(&d);
     }
 };
 
