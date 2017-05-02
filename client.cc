@@ -5,15 +5,16 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <string>
 
 #include "err.h"
+#include "datagram.h"
 
-#define BUFFER_SIZE 1000
+#define INITIAL_BUFFER_SIZE 66000
 #define DEFAULT_PORT 20160
 
-
 class Client {
-private:
+
     int sock;
 
     struct addrinfo address_hints;
@@ -22,9 +23,7 @@ private:
     struct sockaddr_in my_address;
     struct sockaddr_in server_address;
 
-    char buffer[BUFFER_SIZE];
-
-    size_t length;
+    char buffer[INITIAL_BUFFER_SIZE];
     ssize_t send_length, receive_length;
 
     socklen_t receive_address_length;
@@ -60,36 +59,28 @@ public:
         if (close(sock) == -1) {
             syserr("close");
         }
-        printf("Deconstructing client.\n");
     }
 
     void send_datagram(char character) {
-        buffer[0] = character;
-        buffer[1] = ' ';
-        buffer[2] = 'l';
-        buffer[3] = 'o';
-        buffer[4] = 'l';
-        length = 5;
-
+        char nothing[0];
+        size_t length = create_datagram(buffer, nothing, character);
         receive_address_length = (socklen_t)sizeof(my_address);
         send_length = sendto(sock, buffer, length, 0, (struct sockaddr *)&my_address, receive_address_length);
-        if (send_length != (ssize_t)length) {
+        if (send_length != (ssize_t)length)
             syserr("partial / failed sending datagram to server");
-        }
     }
 
-    void read_datagrams() {
+    void read_datagram() {
         memset(buffer, 0, sizeof(buffer));
-        length = (size_t)sizeof(buffer) - 1;
+        size_t length = (size_t)sizeof(buffer) - 1;
 
         receive_address_length = (socklen_t)sizeof(server_address);
         receive_length = recvfrom(sock, buffer, length, 0, (struct sockaddr *)&server_address, &receive_address_length);
         if (receive_length < 0) {
             syserr("read");
         }
-        printf("%s", buffer);
+        printf("%s \n", buffer);
     }
-
 };
 
 void print_usage(char *filename) {
@@ -118,5 +109,5 @@ int main(int argc, char *argv[]) {
     c->send_datagram(argv[2][0]);
 
     while (true)
-        c->read_datagrams();
+        c->read_datagram();
 }
