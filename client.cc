@@ -2,12 +2,10 @@
 #include <sys/socket.h>
 #include <netdb.h>
 #include <stdio.h>
-#include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
-#include <string>
+#include <cstring>
 
-#include "err.h"
 #include "datagram.h"
 #include "parse.h"
 
@@ -18,75 +16,48 @@ class Client {
 
     int sock;
 
-    struct addrinfo address_hints;
-    struct addrinfo *address_result;
-
-    struct sockaddr_in my_address;
-    struct sockaddr_in server_address;
-
-    ssize_t send_length, receive_length;
-    socklen_t receive_address_length;
+    sockaddr_in send_address;
+    sockaddr_in receive_address;
 
 public:
-    Client(char *server_host, uint16_t server_port) {
+    Client(sockaddr_in server_address) {
         sock = socket(PF_INET, SOCK_DGRAM, 0);
         if (sock < 0) {
-            syserr("socket");
+            fprintf(stderr, "Socket error.\n");
+            exit(EXIT_FAILURE);
         }
 
-        memset(&address_hints, 0, sizeof(struct addrinfo));
-        address_hints.ai_family = AF_INET;
-        address_hints.ai_socktype = SOCK_DGRAM;
-        address_hints.ai_protocol = IPPROTO_UDP;
-        address_hints.ai_flags = 0;
-        address_hints.ai_addrlen = 0;
-        address_hints.ai_addr = NULL;
-        address_hints.ai_canonname = NULL;
-        address_hints.ai_next = NULL;
-        if (getaddrinfo(server_host, NULL, &address_hints, &address_result) != 0) {
-            syserr("getaddrinfo");
-        }
-
-        my_address.sin_family = AF_INET;
-        my_address.sin_addr.s_addr = ((struct sockaddr_in*)address_result->ai_addr)->sin_addr.s_addr;
-        my_address.sin_port = htons(server_port);
-
-        freeaddrinfo(address_result);
+        this->send_address = server_address;
     }
 
     ~Client() {
-        if (close(sock) == -1) {
-            syserr("close");
-        }
+        if (close(sock) == -1)
+            fprintf(stderr, "Closing socket error.\n");
     }
 
     void send_datagram(char character) {
-        time_t raw_time;
-        time(&raw_time);
-
         datagram d;
-        d.timestamp = (uint64_t)raw_time;
-        d.character = character;
+        prepare_datagram(&d, character, "");
 
         size_t length = sizeof(d);
-
-        receive_address_length = (socklen_t)sizeof(my_address);
-        send_length = sendto(sock, &d, length, 0, (struct sockaddr *)&my_address, receive_address_length);
-        if (send_length != (ssize_t)length)
-            syserr("partial / failed sending datagram to server");
+        if (send(sock, send_address, &d, length) != (ssize_t)length)
+            err_with_ip("Sending datagram error, destination=", send_address);
     }
 
     void read_datagram() {
         datagram d;
-        receive_address_length = (socklen_t)sizeof(server_address);
-        receive_length = recvfrom(sock, &d, sizeof(d), 0, (struct sockaddr *)&server_address, &receive_address_length);
-        if (receive_length < 0)
-            syserr("reading datagram from server err");
 
-        if (!parse_datagram(&d))
-            printf("INVALID DATAGRAM: %ld%c%s\n", d.timestamp, d.character, d.text);
-        else
-            printf("%ld%c%s\n", d.timestamp, d.character, d.text);
+        if (receive(sock, receive_address, &d, sizeof(d)) < 0) {
+            fprintf(stderr, "Reading datagram from server error.\n");
+            return;
+        }
+
+        if (!parse_datagram(&d)) {
+            err_with_ip("Parsing datagram error from=", receive_address);
+            return;
+        }
+
+        printf("%ld%c%s", d.timestamp, d.character, d.text.c_str());
     }
 };
 
@@ -94,28 +65,43 @@ void print_usage(char *filename) {
     printf("Usage: %s timestamp character server_host [server_port]\n", filename);
 }
 
-int main(int argc, char *argv[]) {
-    uint16_t port = DEFAULT_SERVER_PORT;
-
+void parse_arguments(int argc, char *argv[], sockaddr_in *dest, uint16_t *port) {
     if (argc < 4 || argc > 5) {
         print_usage(argv[0]);
-        return 1;
+        exit(EXIT_FAILURE);
     }
     if (argc == 5) {
-        port = parse_port(argv[4]);
-        if (port == 0) {
+        *port = parse_port(argv[4]);
+        if (*port == 0) {
             printf("Port must be within range 1 - 65535.\n");
-            return 1;
+            print_usage(argv[0]);
+            exit(EXIT_FAILURE);
         }
     }
-
     if (strlen(argv[2]) > 1) {
-        print_usage(argv[0]);
         printf("ERROR: Invalid size of character parameter ( > 1).\n");
-        return 1;
+        print_usage(argv[0]);
+        exit(EXIT_FAILURE);
     }
+    if (strlen(argv[2]) != 1 || !isalpha(argv[2][0])) {
+        printf("ERROR: Invalid character (isn't alpha numeric or longer than 1 character).\n");
+        print_usage(argv[0]);
+        exit(EXIT_FAILURE);
+    }
+    if (!parse_host(argv[3], dest)) {
+        printf("ERROR: Invalid server_host.\n");
+        exit(EXIT_FAILURE);
+    }
+}
 
-    Client *c = new Client(argv[3], port);
+int main(int argc, char *argv[]) {
+    sockaddr_in destination;
+    uint16_t port = DEFAULT_SERVER_PORT;
+
+    parse_arguments(argc, argv, &destination, &port);
+    destination.sin_port = htons(port);
+
+    Client *c = new Client(destination);
     c->send_datagram(argv[2][0]);
 
     while (true)

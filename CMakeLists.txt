@@ -3,5 +3,5 @@ project(computernetworks)
 
 set(CMAKE_CXX_FLAGS "-Wall -g ${CMAKE_CXX_FLAGS}")
 
-add_executable(client client.cc datagram.h err.h parse.h)
-add_executable(server server.cc datagram.h err.h parse.h)
+add_executable(client client.cc datagram.h parse.h)
+add_executable(server server.cc datagram.h parse.h)
