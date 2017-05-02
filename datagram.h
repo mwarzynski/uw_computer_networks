@@ -1,27 +1,41 @@
 #ifndef DATAGRAM_H
 #define DATAGRAM_H
 
-#define DATAGRAM_INVALID 1
-
 #include <stdlib.h>
 #include <string>
 #include <time.h>
 #include <vector>
+#include <regex>
+#include <cstdbool>
+#include <cctype>
+
+struct datagram {
+    uint64_t timestamp;
+    char character;
+    char text[];
+};
 
 
-size_t create_datagram(char *result, char *text, char character) {
-    const char *format = "%ld %s%c";
-    memset(result, 0, sizeof(result));
-    time_t raw_time;
-    time(&raw_time);
+bool parse_datagram(datagram *d) {
+    if (!d)
+        return false;
 
-    unsigned long length = (unsigned long)snprintf(nullptr, 0, format, raw_time, text, character);
-    snprintf(result, length + 1, format, raw_time, text, character);
-    return length + 1;
-}
+    // check if character is a letter
+    if (!isalpha(d->character))
+        return false;
 
-int parse_datagram(char *result, uint64_t *timestamp, char *text) {
-    return 0;
+    // parse timestamp
+    time_t raw_time = (time_t)d->timestamp;
+    struct tm *ptm = gmtime(&raw_time);
+
+    // ptm->tm_year = years since 1900
+    int year = ptm->tm_year + 1900;
+
+    // check if year is within given range (QUESTION: how the fuck can it be lower than 1717?)
+    if (year < 1717 || 4242 < year)
+        return false;
+
+    return true;
 }
 
 #endif //DATAGRAM_H
