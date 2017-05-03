@@ -12,24 +12,13 @@
 #define DEFAULT_SERVER_PORT 20160
 
 
-ssize_t send(int sock, sockaddr_in destination, void *data, size_t length) {
-    struct sockaddr * send_sock_addr = (struct sockaddr *)&destination;
-    socklen_t send_addr_length = (socklen_t)sizeof(destination);
-    return sendto(sock, data, length, 0, send_sock_addr, send_addr_length);
-}
-
-ssize_t receive(int sock, sockaddr_in receive_address, void *data, size_t length) {
-    struct sockaddr * receive_sock_addr = (struct sockaddr *)&receive_address;
-    socklen_t receive_addr_length = (socklen_t)sizeof(receive_address);
-    return recvfrom(sock, data, length, 0, receive_sock_addr, &receive_addr_length);
-}
 
 class Client {
 
     int sock;
 
-    sockaddr_in send_address;
-    sockaddr_in receive_address;
+    sockaddr_in server_address;
+    sockaddr_in my_address;
 
 public:
     Client(sockaddr_in server_address) {
@@ -39,7 +28,7 @@ public:
             exit(EXIT_FAILURE);
         }
 
-        this->send_address = server_address;
+        this->server_address = server_address;
     }
 
     ~Client() {
@@ -49,23 +38,24 @@ public:
 
     void send_datagram(char character) {
         datagram d;
-        prepare_datagram(&d, character, "");
+        char text[0];
+        prepare_datagram(&d, character, text);
 
         size_t length = sizeof(d);
-        if (send(sock, send_address, &d, length) != (ssize_t)length)
-            err_with_ip("Sending datagram error, destination=", send_address);
+        if (send(sock, server_address, &d, length) != (ssize_t)length)
+            err_with_ip("[%s] Sending datagram error", server_address);
     }
 
     void read_datagram() {
-        datagram d;
-
-        if (receive(sock, receive_address, &d, sizeof(d)) < 0) {
+        datagram_base b;
+        if (receive(sock, &my_address, &b) < 0) {
             fprintf(stderr, "Reading datagram from server error.\n");
             return;
         }
 
-        if (!parse_datagram(&d)) {
-            err_with_ip("Parsing datagram error from=", receive_address);
+        datagram d;
+        if (!parse_datagram(&b, &d)) {
+            err_with_ip("[%s] Parsing datagram error", my_address);
             return;
         }
 

@@ -6,6 +6,17 @@
 #include <stdexcept>
 #include <arpa/inet.h>
 
+
+bool operator==(const sockaddr_in &a, const sockaddr_in &b) {
+    return (a.sin_addr.s_addr == b.sin_addr.s_addr && a.sin_port == b.sin_port);
+}
+
+bool operator<(const sockaddr_in &a, const sockaddr_in &b) {
+    if (a.sin_addr.s_addr <= b.sin_addr.s_addr)
+        return true;
+    return (a.sin_port <= b.sin_port);
+}
+
 bool parse_host(char *text, sockaddr_in *my_address) {
     struct addrinfo address_hints;
     struct addrinfo *address_result;
@@ -45,10 +56,10 @@ uint16_t parse_port(char *text) {
     return port;
 }
 
-void err_with_ip(std::string message, sockaddr_in sa) {
+void err_with_ip(std::string fmt, sockaddr_in sa) {
     char ip[INET_ADDRSTRLEN];
     inet_ntop(AF_INET, &(sa.sin_addr), ip, INET_ADDRSTRLEN);
-    fprintf(stderr, "Error: %s%s\n", message.c_str(), ip);
+    fprintf(stderr, fmt.c_str(), ip);
 }
 
 bool file_exists(char *filename) {
