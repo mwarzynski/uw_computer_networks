@@ -54,16 +54,4 @@ bool parse_datagram(datagram *d) {
     return true;
 }
 
-ssize_t send(int sock, sockaddr_in destination, void *data, size_t length) {
-    struct sockaddr * send_sock_addr = (struct sockaddr *)&destination;
-    socklen_t send_addr_length = (socklen_t)sizeof(destination);
-    return sendto(sock, data, length, 0, send_sock_addr, send_addr_length);
-}
-
-ssize_t receive(int sock, sockaddr_in receive_address, void *data, size_t length) {
-    struct sockaddr * receive_sock_addr = (struct sockaddr *)&receive_address;
-    socklen_t receive_addr_length = (socklen_t)sizeof(receive_address);
-    return recvfrom(sock, data, length, 0, receive_sock_addr, &receive_addr_length);
-}
-
 #endif //DATAGRAM_H

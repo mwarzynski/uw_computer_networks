@@ -51,4 +51,8 @@ void err_with_ip(std::string message, sockaddr_in sa) {
     fprintf(stderr, "Error: %s%s\n", message.c_str(), ip);
 }
 
+bool file_exists(char *filename) {
+    return (access(filename, F_OK) != -1);
+}
+
 #endif // PARSE_H

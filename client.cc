@@ -9,8 +9,20 @@
 #include "datagram.h"
 #include "parse.h"
 
-#define BUFFER_SIZE 66000
 #define DEFAULT_SERVER_PORT 20160
+
+
+ssize_t send(int sock, sockaddr_in destination, void *data, size_t length) {
+    struct sockaddr * send_sock_addr = (struct sockaddr *)&destination;
+    socklen_t send_addr_length = (socklen_t)sizeof(destination);
+    return sendto(sock, data, length, 0, send_sock_addr, send_addr_length);
+}
+
+ssize_t receive(int sock, sockaddr_in receive_address, void *data, size_t length) {
+    struct sockaddr * receive_sock_addr = (struct sockaddr *)&receive_address;
+    socklen_t receive_addr_length = (socklen_t)sizeof(receive_address);
+    return recvfrom(sock, data, length, 0, receive_sock_addr, &receive_addr_length);
+}
 
 class Client {
 
@@ -65,7 +77,7 @@ void print_usage(char *filename) {
     printf("Usage: %s timestamp character server_host [server_port]\n", filename);
 }
 
-void parse_arguments(int argc, char *argv[], sockaddr_in *dest, uint16_t *port) {
+void parse_arguments(int argc, char *argv[], sockaddr_in *destination, uint16_t *port) {
     if (argc < 4 || argc > 5) {
         print_usage(argv[0]);
         exit(EXIT_FAILURE);
@@ -88,7 +100,7 @@ void parse_arguments(int argc, char *argv[], sockaddr_in *dest, uint16_t *port) 
         print_usage(argv[0]);
         exit(EXIT_FAILURE);
     }
-    if (!parse_host(argv[3], dest)) {
+    if (!parse_host(argv[3], destination)) {
         printf("ERROR: Invalid server_host.\n");
         exit(EXIT_FAILURE);
     }
