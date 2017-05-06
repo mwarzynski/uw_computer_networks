@@ -9,13 +9,13 @@
 #include <poll.h>
 #include <map>
 #include <fstream>
+#include <sstream>
 
 #include "datagram.h"
 #include "parse.h"
 
 #define MAX_DATAGRAMS 4096
 #define MAX_SOCKETS 42
-
 
 class Receive {
 
@@ -42,14 +42,10 @@ public:
 
 class Responds {
 
-    std::string file_content;
-
     std::map<sockaddr_in, time_t> clients;
     std::queue<std::pair<sockaddr_in, datagram>> responds;
 
 public:
-
-    Responds(std::string s) : file_content(s) {}
 
     void add_client(sockaddr_in client) {
         time_t timestamp;
@@ -62,18 +58,19 @@ public:
         time(&timestamp);
         timestamp -= 120; // 2 minutes ago
 
-        for (auto i = clients.cbegin(); i != clients.end(); i++) {
+        for (auto i = clients.cbegin(); i != clients.cend();) {
             if (i->second < timestamp)
-                clients.erase(i);
+                clients.erase(i++);
+            else
+                ++i;
         }
     }
 
     void generate_responds(datagram d) {
         remove_old_clients();
 
-        d.text = file_content;
-        for (auto &kv : clients)
-            responds.push(std::make_pair(kv.first, d));
+        for (auto i = clients.begin(); i != clients.end(); ++i)
+            responds.push(std::make_pair(i->first, d));
     }
 
     std::pair<sockaddr_in, datagram> get_respond() {
@@ -90,7 +87,9 @@ public:
 class Server {
 
     Receive receives;
-    Responds *responds;
+    Responds responds;
+
+    std::string file_content;
 
     datagram_base *receive_buffer;
 
@@ -100,7 +99,8 @@ class Server {
 public:
 
     Server(char *port, char *filename) {
-        responds = new Responds(read_file(filename));
+
+        file_content = read_file(filename);
         receive_buffer = (datagram_base *)malloc(BUFFER_SIZE);
 
         client[0].events = POLLIN;
@@ -111,7 +111,6 @@ public:
         }
 
         client[0].fd = create_socket();
-
         server.sin_family = AF_INET;
         server.sin_addr.s_addr = INADDR_ANY;
         server.sin_port = htons(parse_port(port));
@@ -132,17 +131,19 @@ public:
 
     ~Server() {
         free(receive_buffer);
+
+        for (auto &c : client)
+            close(c.fd);
     }
 
     void run() {
         int events;
         nfds_t sockets;
         do {
-            // generate responds if there aren't any
-            if (responds->empty() && !receives.empty())
+            if (responds.empty() && !receives.empty())
                 generate_responds();
 
-            if (responds->empty())
+            if (responds.empty())
                 sockets = 1;
             else
                 sockets = MAX_SOCKETS;
@@ -158,10 +159,11 @@ public:
                 continue;
             }
 
-            if (client[0].revents & POLLIN)
+            if (client[0].revents & POLLIN) {
                 read();
+            }
 
-            for (nfds_t i = 1; i < MAX_SOCKETS; ++i) {
+            for (nfds_t i = 1; i < sockets; ++i) {
                 if (client[i].fd != -1 && (client[i].revents & POLLOUT))
                     pollout(i);
             }
@@ -181,12 +183,8 @@ private:
         }
 
         std::string content;
-
-        file.seekg(0, std::ios::end);
-        content.reserve(file.tellg());
-
-        file.seekg(0, std::ios::beg);
         content.assign(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>());
+        
         file.close();
 
         return content;
@@ -209,12 +207,12 @@ private:
         sockaddr_in client = r.second;
         datagram d = r.first;
 
-        responds->generate_responds(d);
-        responds->add_client(client);
+        responds.add_client(client);
+        responds.generate_responds(d);
     }
 
     void read() {
-        sockaddr_in receive_address = {};
+        sockaddr_in receive_address;
         datagram d;
         if (receive(client[0].fd, &receive_address, receive_buffer) < 0) {
             fprintf(stderr, "Reading datagram from client error.\n");
@@ -230,16 +228,20 @@ private:
     }
 
     void pollout(int i) {
-        if (responds->empty())
+        if (responds.empty())
             return;
 
-        std::pair<sockaddr_in, datagram> r = responds->get_respond();
+        std::pair<sockaddr_in, datagram> r = responds.get_respond();
         send_datagram(i, r.first, r.second);
     }
 
     void send_datagram(int i, sockaddr_in send_address, datagram d) {
-        size_t length = sizeof(d);
-        if (send(client[i].fd, send_address, &d, length) != (ssize_t)length)
+        prepare_datagram_to_send(&d);
+        d.text = file_content;
+        std::string to_send = datagram_to_string(d);
+
+        size_t length = to_send.size();
+        if (send(client[i].fd, send_address, to_send.data(), length) != (ssize_t)length)
             err_with_ip("[%s] Sending datagram error", send_address);
     }
 };

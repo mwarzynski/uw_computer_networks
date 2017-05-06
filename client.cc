@@ -36,13 +36,16 @@ public:
             fprintf(stderr, "Closing socket error.\n");
     }
 
-    void send_datagram(char character) {
+    void send_datagram(char character, uint64_t timestamp) {
         datagram d;
-        char text[0];
-        prepare_datagram(&d, character, text);
+        d.character = character;
+        d.timestamp = timestamp;
 
-        size_t length = sizeof(d);
-        if (send(sock, server_address, &d, length) != (ssize_t)length)
+        prepare_datagram_to_send(&d);
+        std::string send_to = datagram_to_string(d); 
+
+        size_t length = send_to.size();
+        if (send(sock, server_address, send_to.data(), length) != (ssize_t)length)
             err_with_ip("[%s] Sending datagram error", server_address);
     }
 
@@ -67,7 +70,7 @@ void print_usage(char *filename) {
     printf("Usage: %s timestamp character server_host [server_port]\n", filename);
 }
 
-void parse_arguments(int argc, char *argv[], sockaddr_in *destination, uint16_t *port) {
+void parse_arguments(int argc, char *argv[], sockaddr_in *destination, uint16_t *port, uint64_t *timestamp) {
     if (argc < 4 || argc > 5) {
         print_usage(argv[0]);
         exit(EXIT_FAILURE);
@@ -94,17 +97,24 @@ void parse_arguments(int argc, char *argv[], sockaddr_in *destination, uint16_t 
         printf("ERROR: Invalid server_host.\n");
         exit(EXIT_FAILURE);
     }
+
+    *timestamp = parse_timestamp(argv[1]);
+    if (*timestamp == 0) {
+        printf("ERROR: Timestamp is not valid.");
+        exit(EXIT_FAILURE);
+    }
 }
 
 int main(int argc, char *argv[]) {
     sockaddr_in destination;
     uint16_t port = DEFAULT_SERVER_PORT;
+    uint64_t timestamp;
 
-    parse_arguments(argc, argv, &destination, &port);
+    parse_arguments(argc, argv, &destination, &port, &timestamp);
     destination.sin_port = htons(port);
 
     Client *c = new Client(destination);
-    c->send_datagram(argv[2][0]);
+    c->send_datagram(argv[2][0], timestamp);
 
     while (true)
         c->read_datagram();

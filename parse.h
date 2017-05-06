@@ -12,9 +12,9 @@ bool operator==(const sockaddr_in &a, const sockaddr_in &b) {
 }
 
 bool operator<(const sockaddr_in &a, const sockaddr_in &b) {
-    if (a.sin_addr.s_addr <= b.sin_addr.s_addr)
+    if (a.sin_addr.s_addr < b.sin_addr.s_addr)
         return true;
-    return (a.sin_port <= b.sin_port);
+    return (a.sin_port < b.sin_port);
 }
 
 bool parse_host(char *text, sockaddr_in *my_address) {
@@ -39,6 +39,15 @@ bool parse_host(char *text, sockaddr_in *my_address) {
 
     freeaddrinfo(address_result);
     return true;
+}
+
+uint64_t parse_timestamp(char *timestamp) {
+    uint64_t t = std::stoull(timestamp);
+
+    if (!timestamp_valid(t))
+        return 0;
+
+    return t;
 }
 
 uint16_t parse_port(char *text) {

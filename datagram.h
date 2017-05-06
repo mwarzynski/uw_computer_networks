@@ -6,7 +6,7 @@
 #include <cstdbool>
 #include <cctype>
 #include <string>
-#include <array>
+#include <sstream>
 
 #define BUFFER_SIZE 66000
 
@@ -21,17 +21,44 @@ struct datagram {
     std::string text;
 };
 
+std::string datagram_to_string(datagram d) {
+    std::stringstream s;
+
+    datagram_base base;
+    base.timestamp = d.timestamp;
+    base.character = d.character;
+
+    s.write(reinterpret_cast<char*>(&base), sizeof(datagram_base));
+    s.write(d.text.data(), d.text.size());
+    s.write("\0", sizeof(char));
+
+    return s.str();
+}
+
 void print_datagram(datagram *d) {
-    printf("%ld%c%s", d->timestamp, d->character, d->text.c_str());
+    printf("%ld %c %s\n", d->timestamp, d->character, d->text.c_str());
     fflush(stdout);
 }
 
-void prepare_datagram(datagram *d, char character, std::string text) {
-    d->character = character;
+void prepare_datagram_to_send(datagram *d) {
+    d->timestamp = __builtin_bswap64(d->timestamp);
+}
 
-    time_t raw_time; time(&raw_time);
-    d->timestamp = __builtin_bswap64((uint64_t)raw_time);
-    d->text = text;
+bool timestamp_valid(time_t timestamp) {
+    struct tm *ptm = gmtime(&timestamp);
+
+    if (!ptm)
+        return false;
+
+    // ptm->tm_year = years since 1900
+    uint32_t year = ptm->tm_year + 1900;
+
+    // TODO: delete 'the fuck' from the line below
+    // check if year is within given range (QUESTION: how the fuck can it be lower than 1717?)
+    if (year < 1717 || 4242 < year)
+        return false;
+
+    return true;
 }
 
 bool parse_datagram(datagram_base *b, datagram *d) {
@@ -43,18 +70,7 @@ bool parse_datagram(datagram_base *b, datagram *d) {
 
     b->timestamp = __builtin_bswap64(b->timestamp);
 
-    time_t raw_time = (time_t)b->timestamp;
-    struct tm *ptm = gmtime(&raw_time);
-
-    if (!ptm)
-        return false;
-
-    // ptm->tm_year = years since 1900
-    int year = ptm->tm_year + 1900;
-
-    // TODO: delete 'the fuck' from the line below
-    // check if year is within given range (QUESTION: how the fuck can it be lower than 1717?)
-    if (year < 1717 || 4242 < year)
+    if (!timestamp_valid((time_t)b->timestamp))
         return false;
 
     d->timestamp = b->timestamp;
@@ -64,7 +80,7 @@ bool parse_datagram(datagram_base *b, datagram *d) {
     return true;
 }
 
-ssize_t send(int sock, sockaddr_in destination, void *data, size_t length) {
+ssize_t send(int sock, sockaddr_in destination, const void *data, size_t length) {
     struct sockaddr * send_sock_addr = (struct sockaddr *)&destination;
     socklen_t send_addr_length = (socklen_t)sizeof(destination);
     return sendto(sock, data, length, 0, send_sock_addr, send_addr_length);
