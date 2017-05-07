@@ -36,7 +36,7 @@ std::string datagram_to_string(datagram d) {
 }
 
 void print_datagram(datagram *d) {
-    printf("%ld %c %s\n", d->timestamp, d->character, d->text.c_str());
+    printf("%ld %c %s", d->timestamp, d->character, d->text.c_str());
     fflush(stdout);
 }
 

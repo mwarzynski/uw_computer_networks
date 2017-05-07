@@ -175,16 +175,10 @@ public:
 private:
 
     std::string read_file(char *filename) {
-        std::fstream file;
-        file.open(filename, std::ios::in);
-        if (!file.good()) {
-            printf("Could not open file.");
-            exit(EXIT_FAILURE);
-        }
-
         std::string content;
-        content.assign(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>());
         
+        std::ifstream file(filename);
+        content.assign(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>());
         file.close();
 
         return content;

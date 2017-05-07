@@ -51,7 +51,7 @@ public:
 
         size_t length = send_to.size();
         if (send(sock, server_address, send_to.data(), length) != (ssize_t)length)
-            err_with_ip("[%s] Sending datagram error", server_address);
+            err_with_ip("[%s] Sending datagram error\n", server_address);
     }
 
     void read_datagram() {
