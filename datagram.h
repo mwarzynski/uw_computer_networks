@@ -8,7 +8,7 @@
 #include <string>
 #include <sstream>
 
-#define BUFFER_SIZE 66000
+#define BUFFER_SIZE 65507
 
 struct datagram_base {
     uint64_t timestamp;
