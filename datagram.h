@@ -53,8 +53,7 @@ bool timestamp_valid(time_t timestamp) {
     // ptm->tm_year = years since 1900
     uint32_t year = ptm->tm_year + 1900;
 
-    // TODO: delete 'the fuck' from the line below
-    // check if year is within given range (QUESTION: how the fuck can it be lower than 1717?)
+    // check if year is within given range (QUESTION: how can it be lower than 1717?)
     if (year < 1717 || 4242 < year)
         return false;
 
