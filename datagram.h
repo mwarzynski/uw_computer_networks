@@ -68,10 +68,6 @@ bool parse_datagram(datagram_base *b, datagram *d, size_t bytes_received) {
         return false;
 
     b->timestamp = __builtin_bswap64(b->timestamp);
-
-    if (!timestamp_valid((time_t)b->timestamp))
-        return false;
-
     d->timestamp = b->timestamp;
     d->character = b->character;
 

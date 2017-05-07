@@ -227,6 +227,11 @@ private:
             return;
         }
 
+        if (!timestamp_valid((time_t)d.timestamp)) {
+            err_with_ip("[%s] Got invalid timestamp in datagram.\n", receive_address);
+            return;
+        }
+
         receives.add(receive_address, d);
     }
 
