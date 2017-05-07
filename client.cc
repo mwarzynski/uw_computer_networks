@@ -63,11 +63,7 @@ public:
         }
 
         datagram d;
-        if (!parse_datagram(receive_buffer, &d, bytes_received)) {
-            err_with_ip("[%s] Parsing datagram error", my_address);
-            return;
-        }
-
+        parse_datagram(receive_buffer, &d, bytes_received);
         print_datagram(&d);
     }
 };

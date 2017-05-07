@@ -76,6 +76,7 @@ public:
     std::pair<sockaddr_in, datagram> get_respond() {
         std::pair<sockaddr_in, datagram> ret = responds.front();
         responds.pop();
+
         return ret;
     }
 
@@ -203,12 +204,23 @@ private:
         if (receives.empty())
             return;
 
-        std::pair<datagram, sockaddr_in> r = receives.pop();
-        sockaddr_in client = r.second;
-        datagram d = r.first;
+        datagram d;
+        sockaddr_in client;
+        bool valid = false;
+        std::pair<datagram, sockaddr_in> r;
+
+        while (!valid) {
+            r = receives.pop();
+            client = r.second;
+            d = r.first;
+
+            valid = timestamp_valid(d.timestamp);
+        }
 
         responds.add_client(client);
-        responds.generate_responds(d);
+
+        if (valid)
+            responds.generate_responds(d);
     }
 
     void read() {
@@ -222,16 +234,7 @@ private:
             return;
         }
 
-        if (!parse_datagram(receive_buffer, &d, bytes_received)) {
-            err_with_ip("[%s] Parsing datagram error\n", receive_address);
-            return;
-        }
-
-        if (!timestamp_valid((time_t)d.timestamp)) {
-            err_with_ip("[%s] Got invalid timestamp in datagram.\n", receive_address);
-            return;
-        }
-
+        parse_datagram(receive_buffer, &d, bytes_received);
         receives.add(receive_address, d);
     }
 

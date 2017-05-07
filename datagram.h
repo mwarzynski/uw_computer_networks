@@ -60,21 +60,13 @@ bool timestamp_valid(time_t timestamp) {
     return true;
 }
 
-bool parse_datagram(datagram_base *b, datagram *d, size_t bytes_received) {
-    if (!b)
-        return false;
-
-    if (!isalpha(b->character))
-        return false;
-
+void parse_datagram(datagram_base *b, datagram *d, size_t bytes_received) {
     b->timestamp = __builtin_bswap64(b->timestamp);
     d->timestamp = b->timestamp;
     d->character = b->character;
 
     char *text = reinterpret_cast<char*>((char *)(b) + sizeof(datagram_base));
     d->text = std::string(text, bytes_received - sizeof(datagram_base) - 1);
-
-    return true;
 }
 
 ssize_t send(int sock, sockaddr_in destination, const void *data, size_t length) {
