@@ -12,7 +12,6 @@
 #define DEFAULT_SERVER_PORT 20160
 
 
-
 class Client {
 
     int sock;
