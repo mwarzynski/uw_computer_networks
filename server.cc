@@ -179,7 +179,13 @@ private:
         
         std::ifstream file(filename);
         content.assign(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>());
+
         file.close();
+
+        if (content.size() + sizeof(datagram_base) > BUFFER_SIZE) {
+            fprintf(stderr, "Given file is too big for UDP packed.\n");
+            exit(EXIT_FAILURE);
+        }
 
         return content;
     }
