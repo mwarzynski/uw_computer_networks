@@ -61,7 +61,7 @@ bool timestamp_valid(time_t timestamp) {
     return true;
 }
 
-bool parse_datagram(datagram_base *b, datagram *d) {
+bool parse_datagram(datagram_base *b, datagram *d, size_t bytes_received) {
     if (!b)
         return false;
 
@@ -75,7 +75,9 @@ bool parse_datagram(datagram_base *b, datagram *d) {
 
     d->timestamp = b->timestamp;
     d->character = b->character;
-    d->text = std::string((char *)(b) + sizeof(datagram_base));
+
+    char *text = reinterpret_cast<char*>((char *)(b) + sizeof(datagram_base));
+    d->text = std::string(text, bytes_received - sizeof(datagram_base) - 1);
 
     return true;
 }

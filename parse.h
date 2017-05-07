@@ -41,13 +41,17 @@ bool parse_host(char *text, sockaddr_in *my_address) {
     return true;
 }
 
-uint64_t parse_timestamp(char *timestamp) {
-    uint64_t t = std::stoull(timestamp);
+bool parse_timestamp(char *timestamp, uint64_t *t) {
+    try {
+        *t = std::stoull(timestamp);
+    } catch (...) {
+        return false;
+    }
 
-    if (!timestamp_valid(t))
-        return 0;
+    if (!timestamp_valid(*t))
+        return false;
 
-    return t;
+    return true;
 }
 
 uint16_t parse_port(char *text) {

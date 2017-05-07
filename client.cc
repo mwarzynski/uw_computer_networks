@@ -16,11 +16,15 @@ class Client {
 
     int sock;
 
+    datagram_base *receive_buffer;
+
     sockaddr_in server_address;
     sockaddr_in my_address;
 
 public:
     Client(sockaddr_in server_address) {
+        receive_buffer = (datagram_base *)malloc(BUFFER_SIZE);
+
         sock = socket(PF_INET, SOCK_DGRAM, 0);
         if (sock < 0) {
             fprintf(stderr, "Socket error.\n");
@@ -31,6 +35,8 @@ public:
     }
 
     ~Client() {
+        free(receive_buffer);
+
         if (close(sock) == -1)
             fprintf(stderr, "Closing socket error.\n");
     }
@@ -49,14 +55,15 @@ public:
     }
 
     void read_datagram() {
-        datagram_base b;
-        if (receive(sock, &my_address, &b) < 0) {
+        size_t bytes_received = receive(sock, &my_address, receive_buffer);
+
+        if (bytes_received < 0) {
             fprintf(stderr, "Reading datagram from server error.\n");
             return;
         }
 
         datagram d;
-        if (!parse_datagram(&b, &d)) {
+        if (!parse_datagram(receive_buffer, &d, bytes_received)) {
             err_with_ip("[%s] Parsing datagram error", my_address);
             return;
         }
@@ -97,9 +104,8 @@ void parse_arguments(int argc, char *argv[], sockaddr_in *destination, uint16_t 
         exit(EXIT_FAILURE);
     }
 
-    *timestamp = parse_timestamp(argv[1]);
-    if (*timestamp == 0) {
-        printf("ERROR: Timestamp is not valid.");
+    if (!parse_timestamp(argv[1], timestamp)) {
+        printf("ERROR: Timestamp is not valid.\n");
         exit(EXIT_FAILURE);
     }
 }

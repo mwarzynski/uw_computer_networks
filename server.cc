@@ -214,12 +214,15 @@ private:
     void read() {
         sockaddr_in receive_address;
         datagram d;
-        if (receive(client[0].fd, &receive_address, receive_buffer) < 0) {
+
+        size_t bytes_received = receive(client[0].fd, &receive_address, receive_buffer); 
+
+        if (bytes_received < 0) {
             fprintf(stderr, "Reading datagram from client error.\n");
             return;
         }
 
-        if (!parse_datagram(receive_buffer, &d)) {
+        if (!parse_datagram(receive_buffer, &d, bytes_received)) {
             err_with_ip("[%s] Parsing datagram error\n", receive_address);
             return;
         }
@@ -238,6 +241,7 @@ private:
     void send_datagram(int i, sockaddr_in send_address, datagram d) {
         prepare_datagram_to_send(&d);
         d.text = file_content;
+
         std::string to_send = datagram_to_string(d);
 
         size_t length = to_send.size();
