@@ -12,7 +12,7 @@
 
 struct datagram_base {
     uint64_t timestamp;
-    char character;
+    uint8_t character;
 } __attribute__((packed));
 
 struct datagram {
