@@ -1,8 +1,2 @@
-server.o
-client.o
-err.o
-server
-client
-.idea
 build
 cmake-build-debug
