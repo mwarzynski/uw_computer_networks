@@ -1,5 +1,3 @@
-# Termin: 8.05.2017 19.00
-
 # Treść
 
 Należy przygotować parę programów – klient i serwer – służącą do komunikacji
@@ -68,23 +66,3 @@ Wysyłanie datagramów nie powinno blokować ich odbierania. Jeżeli datagramy n
 
 Ponieważ rozwiązanie będzie automatycznie testowane, należy ściśle przestrzegać podanej specyfikacji (nazwy plików, protokół komunikacji, komunikaty na standardowym wyjściu, kody powrotu).
 
-
-## Oddawanie rozwiązania
-
-Jako rozwiązanie należy dostarczyć pliki źródłowe client.c i server.c (albo client.cc i server.cc), które należy umieścić na studentsie w katalogu
-
-/home/students/inf/PUBLIC/SIK/students/ab123456/zadanie1/
-
-gdzie ab123456 to standardowy login osoby oddającej rozwiązanie, używany na maszynach wydziału, wg schematu: inicjały, nr indeksu.
-
-W katalogu mogą też znajdować się dowolne pliki nagłówkowe o nazwach .h i katalog private z plikami, które nie będą sprawdzane. Nie należy umieszczać plików innych niż wymienione w treści zadania poza katalogiem private.
-
-## Ocena
-
-Ocena zadania będzie składała się z trzech składników:
-
-- ocena wzrokowa działania programu (20%)
-- testy automatyczne (60%)
-- jakość kodu źródłowego (20%)
-
-Każda rozpoczęta minuta spóźnienia będzie kosztowała 0,01 punktu.
